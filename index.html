@@ -8,7 +8,7 @@
             color: white;
             font-family: Arial;
             text-align: center;
-            padding: 30px;
+            padding: 25px;
         }
 
         .game {
@@ -17,6 +17,13 @@
             border-radius: 15px;
             max-width: 500px;
             margin: auto;
+        }
+
+        input, select {
+            padding: 10px;
+            width: 90%;
+            margin: 10px;
+            border-radius: 8px;
         }
 
         button {
@@ -40,42 +47,145 @@
             padding: 15px;
             border-radius: 8px;
         }
+
+        .hidden {
+            display: none;
+        }
     </style>
 </head>
+
 <body>
 
 <div class="game">
+
     <h1>🔎 C Code Detective</h1>
-    <p>Find the bug in the code!</p>
+    <p>Find the bugs and become a code detective!</p>
 
-    <h3 id="question"></h3>
-    <pre id="code"></pre>
+    <div id="startScreen">
+        <h2>Game Start</h2>
 
-    <div id="options"></div>
-    <p id="result"></p>
-    <h3 id="score"></h3>
-    <button id="next" onclick="nextQuestion()" hidden>Next Question</button>
-    <button id="again" onclick="restart()" hidden>Play Again</button>
+        <input type="text" id="playerName"
+               placeholder="Enter your name">
+
+        <select id="level">
+            <option value="Easy">Easy Level</option>
+            <option value="Medium">Medium Level</option>
+            <option value="Hard">Hard Level</option>
+        </select>
+
+        <h3 id="overallStart">Overall Score: 0</h3>
+
+        <button onclick="startGame()">Start Game</button>
+    </div>
+
+    <div id="gameScreen" class="hidden">
+        <h3 id="welcome"></h3>
+        <h3 id="question"></h3>
+        <pre id="code"></pre>
+
+        <div id="options"></div>
+
+        <p id="result"></p>
+        <h3 id="score"></h3>
+        <h3 id="overall"></h3>
+
+        <button id="next" onclick="nextQuestion()" hidden>
+            Next Question
+        </button>
+    </div>
+
+    <div id="endScreen" class="hidden">
+        <h2>🎉 Game Over!</h2>
+        <h3 id="finalName"></h3>
+        <h3 id="finalScore"></h3>
+        <h3 id="finalOverall"></h3>
+
+        <button onclick="restart()">Play Again</button>
+    </div>
+
 </div>
 
 <script>
-    const questions = [
-        {
-            question: "Question 1: What is missing?",
-            code: "int a = 5",
-            options: ["Bracket", "Semicolon", "Variable"],
-            answer: 1
-        },
-        {
-            question: "Question 2: Which operator compares values?",
-            code: "if (a = 10)",
-            options: ["==", "=", "+="],
-            answer: 0
-        }
-    ];
-
+    let player = "";
+    let level = "Easy";
     let current = 0;
     let score = 0;
+
+    let overallScore = Number(localStorage.getItem("overallScore")) || 0;
+
+    const questionBank = {
+        Easy: [
+            {
+                question: "Question 1: What is missing?",
+                code: "int a = 5",
+                options: ["Bracket", "Semicolon", "Variable"],
+                answer: 1
+            },
+            {
+                question: "Question 2: Which operator compares values?",
+                code: "if (a = 10)",
+                options: ["==", "=", "+="],
+                answer: 0
+            }
+        ],
+
+        Medium: [
+            {
+                question: "Question 1: Find the error",
+                code: "printf(\"Hello\")",
+                options: ["Missing semicolon", "Wrong variable", "No error"],
+                answer: 0
+            },
+            {
+                question: "Question 2: What is wrong?",
+                code: "int 2num = 10;",
+                options: ["Wrong value", "Invalid variable name", "Missing bracket"],
+                answer: 1
+            }
+        ],
+
+        Hard: [
+            {
+                question: "Question 1: Find the loop error",
+                code: "for(i = 0; i < 5; i--)",
+                options: ["i should increase", "Missing semicolon", "No error"],
+                answer: 0
+            },
+            {
+                question: "Question 2: Find the error",
+                code: "int a;\nprintf(\"%d\", b);",
+                options: ["Missing semicolon", "b is not declared", "No error"],
+                answer: 1
+            }
+        ]
+    };
+
+    let questions = [];
+
+    document.getElementById("overallStart").textContent =
+        "Overall Score: " + overallScore;
+
+    function startGame() {
+        player = document.getElementById("playerName").value.trim();
+        level = document.getElementById("level").value;
+
+        if (player === "") {
+            alert("Please enter your name!");
+            return;
+        }
+
+        current = 0;
+        score = 0;
+        questions = questionBank[level];
+
+        document.getElementById("startScreen").classList.add("hidden");
+        document.getElementById("gameScreen").classList.remove("hidden");
+
+        document.getElementById("welcome").textContent =
+            "Player: " + player + " | Level: " + level;
+
+        showQuestion();
+    }
 
     function showQuestion() {
         document.getElementById("question").textContent =
@@ -85,38 +195,58 @@
             questions[current].code;
 
         document.getElementById("result").textContent = "";
-        document.getElementById("score").textContent = "Score: " + score;
+        document.getElementById("score").textContent =
+            "Current Score: " + score;
+
+        document.getElementById("overall").textContent =
+            "Overall Score: " + overallScore;
+
+        document.getElementById("next").hidden = true;
 
         const options = document.getElementById("options");
         options.innerHTML = "";
 
         questions[current].options.forEach((option, index) => {
             const button = document.createElement("button");
+
             button.textContent = (index + 1) + ". " + option;
-            button.onclick = () => checkAnswer(index);
+            button.onclick = function() {
+                checkAnswer(index);
+            };
+
             options.appendChild(button);
         });
     }
 
     function checkAnswer(choice) {
         const buttons = document.querySelectorAll("#options button");
-        buttons.forEach(button => button.disabled = true);
+
+        buttons.forEach(button => {
+            button.disabled = true;
+        });
 
         if (choice === questions[current].answer) {
             score += 10;
-            document.getElementById("result").textContent = "Correct! +10 points";
+            overallScore += 10;
+
+            localStorage.setItem("overallScore", overallScore);
+
+            document.getElementById("result").textContent =
+                "Correct! +10 points";
         } else {
             document.getElementById("result").textContent =
                 "Wrong! Correct answer: " +
                 questions[current].options[questions[current].answer];
         }
 
-        document.getElementById("score").textContent = "Score: " + score;
+        document.getElementById("score").textContent =
+            "Current Score: " + score;
+
+        document.getElementById("overall").textContent =
+            "Overall Score: " + overallScore;
 
         if (current === questions.length - 1) {
-            document.getElementById("next").hidden = true;
-            document.getElementById("again").hidden = false;
-            document.getElementById("result").textContent += " — Game Over!";
+            setTimeout(showEndScreen, 1000);
         } else {
             document.getElementById("next").hidden = false;
         }
@@ -124,18 +254,32 @@
 
     function nextQuestion() {
         current++;
-        document.getElementById("next").hidden = true;
         showQuestion();
+    }
+
+    function showEndScreen() {
+        document.getElementById("gameScreen").classList.add("hidden");
+        document.getElementById("endScreen").classList.remove("hidden");
+
+        document.getElementById("finalName").textContent =
+            "Player: " + player;
+
+        document.getElementById("finalScore").textContent =
+            "Your Score: " + score;
+
+        document.getElementById("finalOverall").textContent =
+            "Overall Score: " + overallScore;
     }
 
     function restart() {
-        current = 0;
-        score = 0;
-        document.getElementById("again").hidden = true;
-        showQuestion();
-    }
+        document.getElementById("endScreen").classList.add("hidden");
+        document.getElementById("startScreen").classList.remove("hidden");
 
-    showQuestion();
+        document.getElementById("overallStart").textContent =
+            "Overall Score: " + overallScore;
+
+        document.getElementById("playerName").value = player;
+    }
 </script>
 
 </body>

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>C Code Detective</title>
+    <style>
+        body {
+            background: #111827;
+            color: white;
+            font-family: Arial;
+            text-align: center;
+            padding: 30px;
+        }
+
+        .game {
+            background: #1f2937;
+            padding: 25px;
+            border-radius: 15px;
+            max-width: 500px;
+            margin: auto;
+        }
+
+        button {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        pre {
+            background: #111827;
+            padding: 15px;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="game">
+    <h1>🔎 C Code Detective</h1>
+    <p>Find the bug in the code!</p>
+
+    <h3 id="question"></h3>
+    <pre id="code"></pre>
+
+    <div id="options"></div>
+    <p id="result"></p>
+    <h3 id="score"></h3>
+    <button id="next" onclick="nextQuestion()" hidden>Next Question</button>
+    <button id="again" onclick="restart()" hidden>Play Again</button>
+</div>
+
+<script>
+    const questions = [
+        {
+            question: "Question 1: What is missing?",
+            code: "int a = 5",
+            options: ["Bracket", "Semicolon", "Variable"],
+            answer: 1
+        },
+        {
+            question: "Question 2: Which operator compares values?",
+            code: "if (a = 10)",
+            options: ["==", "=", "+="],
+            answer: 0
+        }
+    ];
+
+    let current = 0;
+    let score = 0;
+
+    function showQuestion() {
+        document.getElementById("question").textContent =
+            questions[current].question;
+
+        document.getElementById("code").textContent =
+            questions[current].code;
+
+        document.getElementById("result").textContent = "";
+        document.getElementById("score").textContent = "Score: " + score;
+
+        const options = document.getElementById("options");
+        options.innerHTML = "";
+
+        questions[current].options.forEach((option, index) => {
+            const button = document.createElement("button");
+            button.textContent = (index + 1) + ". " + option;
+            button.onclick = () => checkAnswer(index);
+            options.appendChild(button);
+        });
+    }
+
+    function checkAnswer(choice) {
+        const buttons = document.querySelectorAll("#options button");
+        buttons.forEach(button => button.disabled = true);
+
+        if (choice === questions[current].answer) {
+            score += 10;
+            document.getElementById("result").textContent = "Correct! +10 points";
+        } else {
+            document.getElementById("result").textContent =
+                "Wrong! Correct answer: " +
+                questions[current].options[questions[current].answer];
+        }
+
+        document.getElementById("score").textContent = "Score: " + score;
+
+        if (current === questions.length - 1) {
+            document.getElementById("next").hidden = true;
+            document.getElementById("again").hidden = false;
+            document.getElementById("result").textContent += " — Game Over!";
+        } else {
+            document.getElementById("next").hidden = false;
+        }
+    }
+
+    function nextQuestion() {
+        current++;
+        document.getElementById("next").hidden = true;
+        showQuestion();
+    }
+
+    function restart() {
+        current = 0;
+        score = 0;
+        document.getElementById("again").hidden = true;
+        showQuestion();
+    }
+
+    showQuestion();
+</script>
+
+</body>
+</html>

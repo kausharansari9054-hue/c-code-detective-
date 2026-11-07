@@ -1,40 +1,52 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>C Code Detective</title>
+    <title>C Code Detective - Bug Hunter</title>
+
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
         body {
-            background: #111827;
+            background: #0f172a;
             color: white;
-            font-family: Arial;
+            font-family: Arial, sans-serif;
             text-align: center;
-            padding: 25px;
+            padding: 20px;
         }
 
         .game {
-            background: #1f2937;
+            max-width: 550px;
+            margin: 30px auto;
+            background: #1e293b;
             padding: 25px;
             border-radius: 15px;
-            max-width: 500px;
-            margin: auto;
+            border: 1px solid #334155;
+        }
+
+        h1 {
+            color: #38bdf8;
         }
 
         input, select {
-            padding: 10px;
-            width: 90%;
-            margin: 10px;
-            border-radius: 8px;
-        }
-
-        button {
-            display: block;
             width: 100%;
             padding: 12px;
             margin: 10px 0;
+            border-radius: 8px;
+            border: none;
+            font-size: 16px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
             background: #2563eb;
             color: white;
             border: none;
             border-radius: 8px;
+            font-size: 16px;
             cursor: pointer;
         }
 
@@ -42,14 +54,35 @@
             background: #1d4ed8;
         }
 
-        pre {
-            background: #111827;
-            padding: 15px;
-            border-radius: 8px;
+        button:disabled {
+            background: #64748b;
+            cursor: not-allowed;
         }
 
-        .hidden {
+        pre {
+            background: #020617;
+            color: #4ade80;
+            padding: 18px;
+            border-radius: 8px;
+            text-align: left;
+            overflow-x: auto;
+        }
+
+        .screen {
             display: none;
+        }
+
+        .active {
+            display: block;
+        }
+
+        .info {
+            color: #cbd5e1;
+        }
+
+        #result {
+            font-weight: bold;
+            color: #facc15;
         }
     </style>
 </head>
@@ -59,10 +92,13 @@
 <div class="game">
 
     <h1>🔎 C Code Detective</h1>
-    <p>Find the bugs and become a code detective!</p>
+    <p class="info">Find the bug. Become a coding detective!</p>
 
-    <div id="startScreen">
-        <h2>Game Start</h2>
+    <!-- START SCREEN -->
+
+    <div id="startScreen" class="screen active">
+
+        <h2>Welcome Detective!</h2>
 
         <input type="text" id="playerName"
                placeholder="Enter your name">
@@ -73,56 +109,79 @@
             <option value="Hard">Hard Level</option>
         </select>
 
-        <h3 id="overallStart">Overall Score: 0</h3>
+        <h3 id="startOverall">Overall Score: 0</h3>
 
-        <button onclick="startGame()">Start Game</button>
+        <button onclick="startGame()">START GAME</button>
+
     </div>
 
-    <div id="gameScreen" class="hidden">
-        <h3 id="welcome"></h3>
+    <!-- GAME SCREEN -->
+
+    <div id="gameScreen" class="screen">
+
+        <h3 id="playerInfo"></h3>
+
+        <p id="questionNumber"></p>
+
         <h3 id="question"></h3>
+
         <pre id="code"></pre>
 
         <div id="options"></div>
 
         <p id="result"></p>
-        <h3 id="score"></h3>
-        <h3 id="overall"></h3>
 
-        <button id="next" onclick="nextQuestion()" hidden>
-            Next Question
+        <h3 id="currentScore">Current Score: 0</h3>
+
+        <h3 id="gameOverall">Overall Score: 0</h3>
+
+        <button id="nextButton" onclick="nextQuestion()" hidden>
+            NEXT QUESTION
         </button>
+
     </div>
 
-    <div id="endScreen" class="hidden">
-        <h2>🎉 Game Over!</h2>
-        <h3 id="finalName"></h3>
+    <!-- GAME OVER SCREEN -->
+
+    <div id="endScreen" class="screen">
+
+        <h2>🎉 GAME OVER 🎉</h2>
+
+        <h3 id="finalPlayer"></h3>
+
+        <h3 id="finalLevel"></h3>
+
         <h3 id="finalScore"></h3>
+
         <h3 id="finalOverall"></h3>
 
-        <button onclick="restart()">Play Again</button>
+        <button onclick="playAgain()">PLAY AGAIN</button>
+
     </div>
 
 </div>
 
 <script>
-    let player = "";
-    let level = "Easy";
+
+    let playerName = "";
+    let selectedLevel = "Easy";
     let current = 0;
     let score = 0;
+    let questions = [];
 
-    let overallScore = Number(localStorage.getItem("overallScore")) || 0;
+    let overallScore = Number(localStorage.getItem("detectiveScore")) || 0;
 
     const questionBank = {
+
         Easy: [
             {
-                question: "Question 1: What is missing?",
+                question: "What is missing in this code?",
                 code: "int a = 5",
                 options: ["Bracket", "Semicolon", "Variable"],
                 answer: 1
             },
             {
-                question: "Question 2: Which operator compares values?",
+                question: "Which operator compares two values?",
                 code: "if (a = 10)",
                 options: ["==", "=", "+="],
                 answer: 0
@@ -131,63 +190,76 @@
 
         Medium: [
             {
-                question: "Question 1: Find the error",
+                question: "Find the error in this code.",
                 code: "printf(\"Hello\")",
                 options: ["Missing semicolon", "Wrong variable", "No error"],
                 answer: 0
             },
             {
-                question: "Question 2: What is wrong?",
+                question: "Which is the invalid variable name?",
                 code: "int 2num = 10;",
-                options: ["Wrong value", "Invalid variable name", "Missing bracket"],
-                answer: 1
+                options: ["2num", "num2", "number"],
+                answer: 0
             }
         ],
 
         Hard: [
             {
-                question: "Question 1: Find the loop error",
+                question: "What is the problem with this loop?",
                 code: "for(i = 0; i < 5; i--)",
-                options: ["i should increase", "Missing semicolon", "No error"],
+                options: ["i decreases", "Missing bracket", "No error"],
                 answer: 0
             },
             {
-                question: "Question 2: Find the error",
+                question: "Find the error.",
                 code: "int a;\nprintf(\"%d\", b);",
-                options: ["Missing semicolon", "b is not declared", "No error"],
+                options: ["Missing semicolon", "b is undeclared", "No error"],
                 answer: 1
             }
         ]
+
     };
 
-    let questions = [];
+    function showScreen(screenId) {
 
-    document.getElementById("overallStart").textContent =
-        "Overall Score: " + overallScore;
+        document.getElementById("startScreen").classList.remove("active");
+        document.getElementById("gameScreen").classList.remove("active");
+        document.getElementById("endScreen").classList.remove("active");
+
+        document.getElementById(screenId).classList.add("active");
+
+    }
 
     function startGame() {
-        player = document.getElementById("playerName").value.trim();
-        level = document.getElementById("level").value;
 
-        if (player === "") {
+        playerName = document.getElementById("playerName").value.trim();
+
+        selectedLevel = document.getElementById("level").value;
+
+        if (playerName === "") {
             alert("Please enter your name!");
             return;
         }
 
-        current = 0;
         score = 0;
-        questions = questionBank[level];
+        current = 0;
 
-        document.getElementById("startScreen").classList.add("hidden");
-        document.getElementById("gameScreen").classList.remove("hidden");
+        questions = questionBank[selectedLevel];
 
-        document.getElementById("welcome").textContent =
-            "Player: " + player + " | Level: " + level;
+        document.getElementById("playerInfo").textContent =
+            "Player: " + playerName + " | Level: " + selectedLevel;
+
+        showScreen("gameScreen");
 
         showQuestion();
+
     }
 
     function showQuestion() {
+
+        document.getElementById("questionNumber").textContent =
+            "Question " + (current + 1) + " / " + questions.length;
+
         document.getElementById("question").textContent =
             questions[current].question;
 
@@ -195,91 +267,129 @@
             questions[current].code;
 
         document.getElementById("result").textContent = "";
-        document.getElementById("score").textContent =
+
+        document.getElementById("currentScore").textContent =
             "Current Score: " + score;
 
-        document.getElementById("overall").textContent =
+        document.getElementById("gameOverall").textContent =
             "Overall Score: " + overallScore;
 
-        document.getElementById("next").hidden = true;
+        document.getElementById("nextButton").hidden = true;
 
-        const options = document.getElementById("options");
-        options.innerHTML = "";
+        const optionsBox = document.getElementById("options");
 
-        questions[current].options.forEach((option, index) => {
-            const button = document.createElement("button");
+        optionsBox.innerHTML = "";
+
+        questions[current].options.forEach(function(option, index) {
+
+            let button = document.createElement("button");
 
             button.textContent = (index + 1) + ". " + option;
+
             button.onclick = function() {
                 checkAnswer(index);
             };
 
-            options.appendChild(button);
+            optionsBox.appendChild(button);
+
         });
+
     }
 
     function checkAnswer(choice) {
+
         const buttons = document.querySelectorAll("#options button");
 
-        buttons.forEach(button => {
+        buttons.forEach(function(button) {
             button.disabled = true;
         });
 
         if (choice === questions[current].answer) {
+
             score += 10;
             overallScore += 10;
 
-            localStorage.setItem("overallScore", overallScore);
+            localStorage.setItem("detectiveScore", overallScore);
 
             document.getElementById("result").textContent =
-                "Correct! +10 points";
+                "Correct Answer! +10 Points";
+
         } else {
+
             document.getElementById("result").textContent =
-                "Wrong! Correct answer: " +
+                "Wrong Answer! Correct answer: " +
                 questions[current].options[questions[current].answer];
+
         }
 
-        document.getElementById("score").textContent =
+        document.getElementById("currentScore").textContent =
             "Current Score: " + score;
 
-        document.getElementById("overall").textContent =
+        document.getElementById("gameOverall").textContent =
             "Overall Score: " + overallScore;
 
         if (current === questions.length - 1) {
-            setTimeout(showEndScreen, 1000);
+
+            document.getElementById("nextButton").textContent =
+                "SHOW RESULT";
+
         } else {
-            document.getElementById("next").hidden = false;
+
+            document.getElementById("nextButton").textContent =
+                "NEXT QUESTION";
+
         }
+
+        document.getElementById("nextButton").hidden = false;
+
     }
 
     function nextQuestion() {
-        current++;
-        showQuestion();
+
+        if (current === questions.length - 1) {
+
+            showResult();
+
+        } else {
+
+            current++;
+
+            showQuestion();
+
+        }
+
     }
 
-    function showEndScreen() {
-        document.getElementById("gameScreen").classList.add("hidden");
-        document.getElementById("endScreen").classList.remove("hidden");
+    function showResult() {
 
-        document.getElementById("finalName").textContent =
-            "Player: " + player;
+        document.getElementById("finalPlayer").textContent =
+            "Player: " + playerName;
+
+        document.getElementById("finalLevel").textContent =
+            "Level: " + selectedLevel;
 
         document.getElementById("finalScore").textContent =
             "Your Score: " + score;
 
         document.getElementById("finalOverall").textContent =
             "Overall Score: " + overallScore;
+
+        showScreen("endScreen");
+
     }
 
-    function restart() {
-        document.getElementById("endScreen").classList.add("hidden");
-        document.getElementById("startScreen").classList.remove("hidden");
+    function playAgain() {
 
-        document.getElementById("overallStart").textContent =
+        document.getElementById("startOverall").textContent =
             "Overall Score: " + overallScore;
 
-        document.getElementById("playerName").value = player;
+        showScreen("startScreen");
+
     }
+
+    document.getElementById("startOverall").textContent =
+        "Overall Score: " + overallScore;
+
 </script>
 
 </body>
